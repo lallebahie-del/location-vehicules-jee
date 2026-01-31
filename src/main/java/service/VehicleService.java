@@ -3,117 +3,114 @@ package service;
 import model.Vehicle;
 import storage.VehicleStorage;
 import storage.ReservationStorage;
+
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 public class VehicleService {
-    
-    // Récupérer tous les véhicules
-	
-    public static Map<Long, Vehicle> getAllVehicles() {
-        return VehicleStorage.getAllVehicles();
+
+    // =========================
+    // LISTE DES VÉHICULES
+    // =========================
+    public static List<Vehicle> getAllVehicles() {
+        return VehicleStorage.getAllVehicles()
+                .values()
+                .stream()
+                .collect(Collectors.toList());
     }
-    
-    // Récupérer les véhicules disponibles
-    public static List<Vehicle> getAvailableVehicles() {
-        return VehicleStorage.getAvailableVehicles();
-    }
-    
-    // Récupérer un véhicule par ID
+
     public static Vehicle getVehicleById(Long id) {
         return VehicleStorage.getVehicleById(id);
     }
-    
-    // Vérifier la disponibilité d'un véhicule pour une période
-    public static boolean isVehicleAvailableForPeriod(Long vehicleId, LocalDate startDate, LocalDate endDate) {
-        // Vérifier si le véhicule existe et est disponible
+
+    // =========================
+    // DISPONIBILITÉ
+    // =========================
+    public static boolean isVehicleAvailableForPeriod(
+            Long vehicleId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
         Vehicle vehicle = VehicleStorage.getVehicleById(vehicleId);
         if (vehicle == null || !"DISPONIBLE".equals(vehicle.getStatut())) {
             return false;
         }
-        
-        // Vérifier les réservations existantes
-        return !ReservationStorage.isVehicleReservedForPeriod(vehicleId, startDate, endDate);
+
+        return !ReservationStorage
+                .isVehicleReservedForPeriod(vehicleId, startDate, endDate);
     }
-    
-    // Filtrer les véhicules par catégorie
-    public static List<Vehicle> getVehiclesByCategory(String category) {
-        return VehicleStorage.getVehiclesByCategory(category);
-    }
-    
-    // Filtrer les véhicules par agence
-    public static List<Vehicle> getVehiclesByAgency(String agency) {
-        return VehicleStorage.getVehiclesByAgency(agency);
-    }
-    
-    // Mettre à jour le statut d'un véhicule
+
+    // =========================
+    // STATUT
+    // =========================
     public static boolean updateVehicleStatus(Long vehicleId, String newStatus) {
         Vehicle vehicle = VehicleStorage.getVehicleById(vehicleId);
         if (vehicle == null) return false;
-        
+
         vehicle.setStatut(newStatus);
         VehicleStorage.updateVehicle(vehicle);
         return true;
     }
-    
-    // Ajouter un nouveau véhicule
-    public static Vehicle addVehicle(String marque, String modele, String immatriculation,
-                                     String categorie, double tarifJournalier, 
-                                     String agence, int nombrePlaces) {
-        
-        Vehicle vehicle = new Vehicle();
-        vehicle.setMarque(marque);
-        vehicle.setModele(modele);
-        vehicle.setImmatriculation(immatriculation);
-        vehicle.setCategorie(categorie);
-        vehicle.setTarifJournalier(tarifJournalier);
-        vehicle.setAgence(agence);
-        vehicle.setNombrePlaces(nombrePlaces);
-        vehicle.setStatut("DISPONIBLE");
-        
-        VehicleStorage.addVehicle(vehicle);
-        return vehicle;
-    }
-    
-    // Calculer le prix pour une période
-    public static double calculatePriceForPeriod(Long vehicleId, LocalDate startDate, LocalDate endDate, boolean avecChauffeur) {
+
+    // =========================
+    // PRIX
+    // =========================
+    public static double calculatePriceForPeriod(
+            Long vehicleId,
+            LocalDate startDate,
+            LocalDate endDate,
+            boolean avecChauffeur) {
+
         Vehicle vehicle = VehicleStorage.getVehicleById(vehicleId);
-        if (vehicle == null) return 0.0;
-        
-        int days = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
-        double basePrice = vehicle.getTarifJournalier() * days;
-        
-        // Supplément chauffeur: +30%
+        if (vehicle == null) return 0;
+
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        double total = vehicle.getTarifJournalier() * days;
+
+        // Chauffeur +30 %
         if (avecChauffeur) {
-            basePrice *= 1.3;
+            total *= 1.3;
         }
-        
-        return basePrice;
+
+        return total;
     }
-    
-    // Vérifier les contraintes de catégorie
-    public static String checkCategoryConstraints(String category, int clientAge, int licenseYears) {
-        if (category == null) return "Catégorie non spécifiée";
-        
-        switch (category.toUpperCase()) {
-            case "SUV":
-                if (clientAge < 25) return "Âge minimum 25 ans pour les SUV";
-                if (licenseYears < 2) return "Permis minimum 2 ans pour les SUV";
-                break;
-                
-            case "LUXE":
-                if (clientAge < 25) return "Âge minimum 25 ans pour les véhicules de luxe";
-                if (licenseYears < 3) return "Permis minimum 3 ans pour les véhicules de luxe";
-                break;
-                
+
+    // =========================
+    // CONTRAINTES CATÉGORIES
+    // =========================
+    public static String checkCategoryConstraints(
+            String categorie,
+            int clientAge,
+            int licenseYears) {
+
+        if (categorie == null) {
+            return "Catégorie non définie";
+        }
+
+        switch (categorie.toUpperCase()) {
+
             case "ECONOMIQUE":
             case "CONFORT":
-                if (clientAge < 21) return "Âge minimum 21 ans pour cette catégorie";
-                if (licenseYears < 1) return "Permis minimum 1 an pour cette catégorie";
+                if (clientAge < 21) return "Âge minimum 21 ans requis";
+                if (licenseYears < 1) return "Permis minimum 1 an requis";
                 break;
+
+            case "SUV":
+                if (clientAge < 25) return "Âge minimum 25 ans requis pour SUV";
+                if (licenseYears < 2) return "Permis minimum 2 ans requis pour SUV";
+                break;
+
+            case "LUXE":
+                if (clientAge < 25) return "Âge minimum 25 ans requis pour véhicule de luxe";
+                if (licenseYears < 3) return "Permis minimum 3 ans requis pour véhicule de luxe";
+                break;
+
+            default:
+                return "Catégorie inconnue";
         }
-        
+
         return "OK";
     }
 }
