@@ -10,6 +10,7 @@ import java.util.Map;
 public class VehicleService {
     
     // Récupérer tous les véhicules
+	
     public static Map<Long, Vehicle> getAllVehicles() {
         return VehicleStorage.getAllVehicles();
     }
