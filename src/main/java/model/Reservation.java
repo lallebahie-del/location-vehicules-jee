@@ -1,16 +1,22 @@
 package model;
 
 import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class Reservation {
     private Long id;
     private Long clientId;
     private Long vehicleId;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dateDebut;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dateFin;
+
     private double montantTotal;
     private String statut; // EN_ATTENTE, CONFIRMEE, ANNULEE, TERMINEE
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dateReservation;
+
     private boolean avecChauffeur;
 
     // Constructors
@@ -19,9 +25,9 @@ public class Reservation {
         this.statut = "EN_ATTENTE";
     }
 
-    public Reservation(Long id, Long clientId, Long vehicleId, 
-                       LocalDate dateDebut, LocalDate dateFin, 
-                       double montantTotal, boolean avecChauffeur) {
+    public Reservation(Long id, Long clientId, Long vehicleId,
+            LocalDate dateDebut, LocalDate dateFin,
+            double montantTotal, boolean avecChauffeur) {
         this.id = id;
         this.clientId = clientId;
         this.vehicleId = vehicleId;
