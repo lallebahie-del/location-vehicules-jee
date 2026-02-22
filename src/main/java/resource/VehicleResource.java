@@ -34,6 +34,27 @@ public class VehicleResource {
         return Response.ok(vehicle).build();
     }
 
+    // 🔹 Lister les véhicules disponibles
+    @GET
+    @Path("/available")
+    public Response getAvailableVehicles() {
+        return Response.ok(storage.VehicleStorage.getAvailableVehicles()).build();
+    }
+
+    // 🔹 Rechercher par catégorie
+    @GET
+    @Path("/category/{cat}")
+    public Response getByCategory(@PathParam("cat") String cat) {
+        return Response.ok(storage.VehicleStorage.getVehiclesByCategory(cat)).build();
+    }
+
+    // 🔹 Rechercher par agence
+    @GET
+    @Path("/agency/{name}")
+    public Response getByAgency(@PathParam("name") String name) {
+        return Response.ok(storage.VehicleStorage.getVehiclesByAgency(name)).build();
+    }
+
     // 🔹 Ajouter un véhicule via GET (QueryParam)
     @GET
     @Path("/add")
@@ -42,9 +63,9 @@ public class VehicleResource {
             @QueryParam("modele") String modele,
             @QueryParam("immatriculation") String immatriculation,
             @QueryParam("categorie") String categorie,
-            @QueryParam("tarif") double tarif,
+            @QueryParam("tarifJournalier") double tarif,
             @QueryParam("agence") String agence,
-            @QueryParam("places") int places) {
+            @QueryParam("nombrePlaces") int places) {
 
         Vehicle vehicle = new Vehicle(null, marque, modele, immatriculation, categorie, tarif, agence, places);
         storage.VehicleStorage.addVehicle(vehicle);

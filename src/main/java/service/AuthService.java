@@ -1,12 +1,16 @@
 package service;
 
 import model.User;
+import model.Client;
+import model.Admin;
+import model.AgencyManager;
 import storage.UserStorage;
+
 import java.time.LocalDate;
 import java.time.Period;
 
 public class AuthService {
-    
+
     // Authentification simple
     public static User login(String username, String password) {
         User user = UserStorage.getUserByUsername(username);
@@ -15,28 +19,29 @@ public class AuthService {
         }
         return null;
     }
-    
+
     // Vérifier si l'utilisateur est admin
     public static boolean isAdmin(User user) {
         return user != null && "ADMIN".equals(user.getRole());
     }
-    
+
     // Vérifier si l'utilisateur est gestionnaire
     public static boolean isManager(User user) {
         return user != null && "MANAGER".equals(user.getRole());
     }
-    
+
     // Vérifier si l'utilisateur est client
     public static boolean isClient(User user) {
         return user != null && "CLIENT".equals(user.getRole());
     }
-    
+
     // Vérifier l'âge minimum selon la catégorie de véhicule
     public static boolean checkAgeForCategory(LocalDate dateNaissance, String vehicleCategory) {
-        if (dateNaissance == null) return false;
-        
+        if (dateNaissance == null)
+            return false;
+
         int age = Period.between(dateNaissance, LocalDate.now()).getYears();
-        
+
         switch (vehicleCategory.toUpperCase()) {
             case "ECONOMIQUE":
             case "CONFORT":
@@ -48,39 +53,66 @@ public class AuthService {
                 return age >= 21;
         }
     }
-    
+
     // Vérifier l'ancienneté du permis (≥ 2 ans)
     public static boolean checkDrivingLicenseExperience(LocalDate dateObtentionPermis) {
-        if (dateObtentionPermis == null) return false;
-        
+        if (dateObtentionPermis == null)
+            return false;
+
         Period experience = Period.between(dateObtentionPermis, LocalDate.now());
-        return experience.getYears() >= 2 || 
-               (experience.getYears() == 1 && experience.getMonths() >= 0);
+        return experience.getYears() >= 2 ||
+                (experience.getYears() == 1 && experience.getMonths() >= 0);
     }
-    
+
     // Vérifier si le permis est valide
     public static boolean isLicenseValid(LocalDate dateObtentionPermis, boolean permisValide) {
         return permisValide && checkDrivingLicenseExperience(dateObtentionPermis);
     }
-    
+
     // Validation complète pour location
-    public static String validateRentalEligibility(LocalDate dateNaissance, 
-                                                   LocalDate dateObtentionPermis, 
-                                                   boolean permisValide, 
-                                                   String vehicleCategory) {
-        
+    public static String validateRentalEligibility(LocalDate dateNaissance,
+            LocalDate dateObtentionPermis,
+            boolean permisValide,
+            String vehicleCategory) {
+
         if (!checkAgeForCategory(dateNaissance, vehicleCategory)) {
             return "Âge insuffisant pour cette catégorie de véhicule";
         }
-        
+
         if (!checkDrivingLicenseExperience(dateObtentionPermis)) {
             return "Permis insuffisamment ancien (minimum 2 ans)";
         }
-        
+
         if (!permisValide) {
             return "Permis de conduire non valide";
         }
-        
+
         return "OK";
+    }
+
+    // Inscription d'un nouvel utilisateur (Subclasses)
+    public static User register(String name, String email, String password, String role) {
+        if (UserStorage.getUserByUsername(email) != null) {
+            throw new IllegalArgumentException("Email déjà utilisé");
+        }
+
+        User user;
+        switch (role.toUpperCase()) {
+            case "ADMIN":
+                user = new Admin(null, email, password);
+                break;
+            case "MANAGER":
+                user = new AgencyManager(null, email, password, name, "", "");
+                break;
+            default:
+                user = new Client();
+                user.setUsername(email);
+                user.setPassword(password);
+                ((Client) user).setNom(name);
+                break;
+        }
+
+        UserStorage.addUser(user);
+        return user;
     }
 }

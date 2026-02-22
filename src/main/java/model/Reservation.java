@@ -1,22 +1,18 @@
 package model;
 
 import java.time.LocalDate;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Reservation {
     private Long id;
     private Long clientId;
     private Long vehicleId;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dateDebut;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dateFin;
-
     private double montantTotal;
     private String statut; // EN_ATTENTE, CONFIRMEE, ANNULEE, TERMINEE
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dateReservation;
-
     private boolean avecChauffeur;
 
     // Constructors
@@ -39,7 +35,7 @@ public class Reservation {
         this.avecChauffeur = avecChauffeur;
     }
 
-    // Getters & Setters
+    // -- Normal Getters & Setters --
     public Long getId() {
         return id;
     }
@@ -64,22 +60,6 @@ public class Reservation {
         this.vehicleId = vehicleId;
     }
 
-    public LocalDate getDateDebut() {
-        return dateDebut;
-    }
-
-    public void setDateDebut(LocalDate dateDebut) {
-        this.dateDebut = dateDebut;
-    }
-
-    public LocalDate getDateFin() {
-        return dateFin;
-    }
-
-    public void setDateFin(LocalDate dateFin) {
-        this.dateFin = dateFin;
-    }
-
     public double getMontantTotal() {
         return montantTotal;
     }
@@ -96,19 +76,56 @@ public class Reservation {
         this.statut = statut;
     }
 
-    public LocalDate getDateReservation() {
-        return dateReservation;
-    }
-
-    public void setDateReservation(LocalDate dateReservation) {
-        this.dateReservation = dateReservation;
-    }
-
     public boolean isAvecChauffeur() {
         return avecChauffeur;
     }
 
     public void setAvecChauffeur(boolean avecChauffeur) {
         this.avecChauffeur = avecChauffeur;
+    }
+
+    // -- LocalDate Setters --
+    public void setDateDebut(LocalDate dateDebut) {
+        this.dateDebut = dateDebut;
+    }
+
+    public void setDateFin(LocalDate dateFin) {
+        this.dateFin = dateFin;
+    }
+
+    public void setDateReservation(LocalDate dateReservation) {
+        this.dateReservation = dateReservation;
+    }
+
+    // -- LocalDate Getters (Hidden from Jackson) --
+    @JsonIgnore
+    public LocalDate getDateDebut() {
+        return dateDebut;
+    }
+
+    @JsonIgnore
+    public LocalDate getDateFin() {
+        return dateFin;
+    }
+
+    @JsonIgnore
+    public LocalDate getDateReservation() {
+        return dateReservation;
+    }
+
+    // -- Jackson Friendly String Getters --
+    @JsonProperty("dateDebut")
+    public String getDateDebutAsString() {
+        return dateDebut != null ? dateDebut.toString() : null;
+    }
+
+    @JsonProperty("dateFin")
+    public String getDateFinAsString() {
+        return dateFin != null ? dateFin.toString() : null;
+    }
+
+    @JsonProperty("dateReservation")
+    public String getDateReservationAsString() {
+        return dateReservation != null ? dateReservation.toString() : null;
     }
 }
