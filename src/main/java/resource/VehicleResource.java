@@ -33,4 +33,24 @@ public class VehicleResource {
         }
         return Response.ok(vehicle).build();
     }
+
+    // 🔹 Ajouter un véhicule via GET (QueryParam)
+    @GET
+    @Path("/add")
+    public Response addVehicle(
+            @QueryParam("marque") String marque,
+            @QueryParam("modele") String modele,
+            @QueryParam("immatriculation") String immatriculation,
+            @QueryParam("categorie") String categorie,
+            @QueryParam("tarif") double tarif,
+            @QueryParam("agence") String agence,
+            @QueryParam("places") int places) {
+
+        Vehicle vehicle = new Vehicle(null, marque, modele, immatriculation, categorie, tarif, agence, places);
+        storage.VehicleStorage.addVehicle(vehicle);
+
+        return Response.status(Response.Status.CREATED)
+                .entity(vehicle)
+                .build();
+    }
 }

@@ -15,33 +15,32 @@ import service.ReservationService;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ReservationResource {
 
-    // 🔹 Créer une réservation
-    @POST
-    public Response createReservation(
-            @QueryParam("clientId") Long clientId,
-            @QueryParam("vehicleId") Long vehicleId,
-            @QueryParam("dateDebut") String dateDebut,
-            @QueryParam("dateFin") String dateFin,
-            @QueryParam("avecChauffeur") boolean avecChauffeur) {
+        // 🔹 Créer une réservation via GET
+        @GET
+        @Path("/add")
+        public Response createReservation(
+                        @QueryParam("clientId") Long clientId,
+                        @QueryParam("vehicleId") Long vehicleId,
+                        @QueryParam("dateDebut") String dateDebut,
+                        @QueryParam("dateFin") String dateFin,
+                        @QueryParam("avecChauffeur") boolean avecChauffeur) {
 
-        Reservation reservation = ReservationService.createReservation(
-                clientId,
-                vehicleId,
-                LocalDate.parse(dateDebut),
-                LocalDate.parse(dateFin),
-                avecChauffeur
-        );
+                Reservation reservation = ReservationService.createReservation(
+                                clientId,
+                                vehicleId,
+                                LocalDate.parse(dateDebut),
+                                LocalDate.parse(dateFin),
+                                avecChauffeur);
 
-        return Response.status(Response.Status.CREATED)
-                .entity(reservation)
-                .build();
-    }
+                return Response.status(Response.Status.CREATED)
+                                .entity(reservation)
+                                .build();
+        }
 
-    // 🔹 Lister toutes les réservations
-    @GET
-    public Response getAllReservations() {
-        List<Reservation> reservations =
-                ReservationService.getAllReservations();
-        return Response.ok(reservations).build();
-    }
+        // 🔹 Lister toutes les réservations
+        @GET
+        public Response getAllReservations() {
+                List<Reservation> reservations = ReservationService.getAllReservations();
+                return Response.ok(reservations).build();
+        }
 }
