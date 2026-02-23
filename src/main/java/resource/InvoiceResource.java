@@ -13,39 +13,60 @@ import java.util.Map;
 @Consumes(MediaType.APPLICATION_JSON)
 public class InvoiceResource {
 
-    // 🔹 Liste toutes les factures
+    // ===================== GET (lecture) =====================
+
+    /** GET /api/invoices?userId=1 → toutes les factures (ADMIN/MANAGER) */
     @GET
-    public Response getAllInvoices() {
+    public Response getAllInvoices(@QueryParam("userId") Long userId) {
         Map<Long, Invoice> invoices = InvoiceService.getAllInvoices();
         return Response.ok(invoices.values()).build();
     }
 
-    // 🔹 Voir les factures d'un client
+    /** GET /api/invoices/{id}?userId=2 → une facture par ID */
+    @GET
+    @Path("/{id}")
+    public Response getInvoiceById(
+            @PathParam("id") Long id,
+            @QueryParam("userId") Long userId) {
+        Invoice invoice = InvoiceService.getInvoiceById(id);
+        if (invoice == null)
+            return Response.status(Response.Status.NOT_FOUND).entity("Facture non trouvée").build();
+        return Response.ok(invoice).build();
+    }
+
+    /** GET /api/invoices/client/{clientId}?userId=2 → factures d'un client */
     @GET
     @Path("/client/{clientId}")
-    public Response getClientInvoices(@PathParam("clientId") Long clientId) {
+    public Response getClientInvoices(
+            @PathParam("clientId") Long clientId,
+            @QueryParam("userId") Long userId) {
         List<Invoice> invoices = InvoiceService.getClientInvoices(clientId);
         return Response.ok(invoices).build();
     }
 
-    // 🔹 Payer une facture (via GET pour test)
-    @GET
-    @Path("/pay")
-    public Response payInvoice(
-            @QueryParam("id") Long id,
-            @QueryParam("mode") String mode) {
-        boolean success = InvoiceService.payInvoice(id, mode);
-        if (success) {
-            return Response.ok("Facture payée avec succès").build();
-        } else {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Échec du paiement").build();
-        }
-    }
-
-    // 🔹 Voir les statistiques financières
+    /** GET /api/invoices/stats?userId=1 → statistiques financières (ADMIN) */
     @GET
     @Path("/stats")
-    public Response getStats() {
+    public Response getStats(@QueryParam("userId") Long userId) {
         return Response.ok(InvoiceService.calculateFinancialStats()).build();
+    }
+
+    // ===================== PUT (paiement) =====================
+
+    /**
+     * PUT /api/invoices/{id}/pay?userId=2&modePaiement=CARTE
+     * Payer une facture. modePaiement : CARTE, ESPECES, VIREMENT
+     */
+    @PUT
+    @Path("/{id}/pay")
+    public Response payInvoice(
+            @PathParam("id") Long id,
+            @QueryParam("userId") Long userId,
+            @QueryParam("modePaiement") @DefaultValue("CARTE") String modePaiement) {
+        boolean success = InvoiceService.payInvoice(id, modePaiement);
+        if (success)
+            return Response.ok("Facture payée avec succès").build();
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Échec du paiement — facture introuvable ou déjà payée").build();
     }
 }

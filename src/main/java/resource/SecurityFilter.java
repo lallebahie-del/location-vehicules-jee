@@ -10,46 +10,35 @@ import storage.UserStorage;
 import java.io.IOException;
 
 /**
- * Filtre de sécurité JAX-RS pour le contrôle d'accès basé sur les rôles.
- * 
- * Vérifie le paramètre "userId" dans chaque requête et contrôle
- * que l'utilisateur a le rôle nécessaire pour accéder à l'endpoint.
- * 
+ * Filtre de sécurité JAX-RS — contrôle d'accès basé sur les rôles.
+ *
+ * Tous les endpoints sécurisés nécessitent le paramètre ?userId=X.
  * Rôles : ADMIN, MANAGER, CLIENT
  */
 @Provider
 public class SecurityFilter implements ContainerRequestFilter {
 
     @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
+    public void filter(ContainerRequestContext ctx) throws IOException {
 
-        String path = requestContext.getUriInfo().getPath();
+        String path = ctx.getUriInfo().getPath();
+        String method = ctx.getMethod(); // GET, POST, PUT, DELETE
 
-        // Normaliser le chemin (supprimer les slashes en début/fin)
-        if (path.startsWith("/")) {
+        // Normaliser le chemin
+        if (path.startsWith("/"))
             path = path.substring(1);
-        }
-        if (path.endsWith("/")) {
+        if (path.endsWith("/"))
             path = path.substring(0, path.length() - 1);
-        }
 
-        // ============================
-        // ENDPOINTS PUBLICS (pas d'auth)
-        // ============================
-        if (isPublicEndpoint(path)) {
-            return; // Accès libre
-        }
+        // ─── ENDPOINTS PUBLICS (sans authentification) ───────────────────────
+        if (isPublicEndpoint(path, method))
+            return;
 
-        // ============================
-        // RÉCUPÉRER L'UTILISATEUR
-        // ============================
-        String userIdParam = requestContext.getUriInfo().getQueryParameters().getFirst("userId");
-
+        // ─── RÉCUPÉRER L'UTILISATEUR ─────────────────────────────────────────
+        String userIdParam = ctx.getUriInfo().getQueryParameters().getFirst("userId");
         if (userIdParam == null || userIdParam.isEmpty()) {
-            requestContext.abortWith(
-                    Response.status(Response.Status.UNAUTHORIZED)
-                            .entity("Authentification requise. Veuillez fournir le paramètre 'userId'.")
-                            .build());
+            ctx.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("Authentification requise — fournir le paramètre 'userId'.").build());
             return;
         }
 
@@ -57,151 +46,183 @@ public class SecurityFilter implements ContainerRequestFilter {
         try {
             userId = Long.parseLong(userIdParam);
         } catch (NumberFormatException e) {
-            requestContext.abortWith(
-                    Response.status(Response.Status.BAD_REQUEST)
-                            .entity("Le paramètre 'userId' doit être un nombre valide.")
-                            .build());
+            ctx.abortWith(Response.status(Response.Status.BAD_REQUEST)
+                    .entity("'userId' doit être un nombre entier.").build());
             return;
         }
 
         User user = UserStorage.getUserById(userId);
         if (user == null) {
-            requestContext.abortWith(
-                    Response.status(Response.Status.UNAUTHORIZED)
-                            .entity("Utilisateur non trouvé.")
-                            .build());
+            ctx.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("Utilisateur non trouvé.").build());
             return;
         }
 
         String role = user.getRole();
 
-        // ============================
-        // VÉRIFIER LES DROITS D'ACCÈS
-        // ============================
-        if (!isAuthorized(path, role)) {
-            requestContext.abortWith(
-                    Response.status(Response.Status.FORBIDDEN)
-                            .entity("Accès refusé. Rôle '" + role + "' non autorisé pour cette ressource.")
-                            .build());
+        // ─── VÉRIFIER LES DROITS D'ACCÈS ─────────────────────────────────────
+        if (!isAuthorized(path, method, role)) {
+            ctx.abortWith(Response.status(Response.Status.FORBIDDEN)
+                    .entity("Accès refusé — rôle '" + role + "' non autorisé.").build());
         }
     }
 
-    /**
-     * Vérifie si l'endpoint est public (accessible sans authentification).
-     */
-    private boolean isPublicEndpoint(String path) {
-        // Auth endpoints (login, register)
-        if (path.startsWith("auth")) {
+    // =========================================================================
+    // Endpoints publics (aucun token requis)
+    // =========================================================================
+    private boolean isPublicEndpoint(String path, String method) {
+        // Auth : login (GET) est public, register (POST) est public
+        if (path.equals("auth/login"))
             return true;
-        }
+        if (path.equals("auth/register"))
+            return true;
 
-        // Consultation du catalogue de véhicules (lecture seule)
-        if (path.equals("vehicles")
-                || path.matches("vehicles/\\d+") // vehicles/{id}
-                || path.equals("vehicles/available")
-                || path.startsWith("vehicles/category/")
-                || path.startsWith("vehicles/agency/")) {
-            return true;
+        // Catalogue de véhicules en lecture seule → GET uniquement
+        if ("GET".equals(method)) {
+            if (path.equals("vehicles"))
+                return true;
+            if (path.matches("vehicles/\\d+"))
+                return true;
+            if (path.equals("vehicles/available"))
+                return true;
+            if (path.startsWith("vehicles/category/"))
+                return true;
+            if (path.startsWith("vehicles/agency/"))
+                return true;
+            if (path.equals("vehicles/pricing"))
+                return true;
         }
 
         return false;
     }
 
-    /**
-     * Vérifie si le rôle de l'utilisateur est autorisé pour l'endpoint donné.
-     */
-    private boolean isAuthorized(String path, String role) {
+    // =========================================================================
+    // Règles d'autorisation par rôle et méthode HTTP
+    // =========================================================================
+    private boolean isAuthorized(String path, String method, String role) {
+        boolean isAdmin = "ADMIN".equals(role);
+        boolean isManager = "MANAGER".equals(role);
+        boolean isClient = "CLIENT".equals(role);
 
-        // ---- VÉHICULES ----
-        // Ajout / modification / suppression : ADMIN uniquement
-        if (path.equals("vehicles/add") || path.equals("vehicles/update") || path.equals("vehicles/delete")) {
-            return "ADMIN".equals(role);
-        }
-        // Maintenance : MANAGER ou ADMIN
-        if (path.equals("vehicles/maintenance") || path.equals("vehicles/maintenance/set")
-                || path.equals("vehicles/maintenance/clear")) {
-            return "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
-        // Véhicule accidenté / réparation : MANAGER ou ADMIN
-        if (path.equals("vehicles/accidente") || path.equals("vehicles/reparer")) {
-            return "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
-        // Tarifs par catégorie : lecture MANAGER/ADMIN, modification ADMIN uniquement
-        if (path.equals("vehicles/pricing")) {
-            return "ADMIN".equals(role) || "MANAGER".equals(role);
-        }
-        if (path.equals("vehicles/pricing/set")) {
-            return "ADMIN".equals(role);
-        }
+        // ── VÉHICULES ──────────────────────────────────────────────────────────
+        // POST /vehicles (créer) → ADMIN
+        if ("vehicles".equals(path) && "POST".equals(method))
+            return isAdmin;
 
-        // ---- RÉSERVATIONS ----
-        // Créer une réservation : CLIENT uniquement
-        if (path.equals("reservations/add")) {
-            return "CLIENT".equals(role);
-        }
-        // Confirmer une réservation : MANAGER ou ADMIN
-        if (path.equals("reservations/confirm")) {
-            return "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
-        // Annuler une réservation : CLIENT uniquement
-        if (path.equals("reservations/cancel")) {
-            return "CLIENT".equals(role);
-        }
-        // Réservations d'un client : CLIENT, MANAGER, ADMIN
-        if (path.startsWith("reservations/client/")) {
-            return "CLIENT".equals(role) || "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
-        // Planning par agence : MANAGER ou ADMIN
-        if (path.startsWith("reservations/agency/")) {
-            return "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
-        // Lister toutes les réservations : MANAGER ou ADMIN
-        if (path.equals("reservations")) {
-            return "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
+        // PUT /vehicles/{id} (modifier) → ADMIN
+        if (path.matches("vehicles/\\d+") && "PUT".equals(method))
+            return isAdmin;
 
-        // ---- CONTRATS ----
-        // Créer un contrat : MANAGER uniquement
-        if (path.equals("contracts/create")) {
-            return "MANAGER".equals(role);
-        }
-        // Clôturer un contrat : MANAGER uniquement
-        if (path.equals("contracts/close")) {
-            return "MANAGER".equals(role);
-        }
-        // Contrats en retard : MANAGER ou ADMIN
-        if (path.equals("contracts/overdue")) {
-            return "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
-        // Contrats d'un client : CLIENT, MANAGER, ADMIN
-        if (path.startsWith("contracts/client/")) {
-            return "CLIENT".equals(role) || "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
+        // DELETE /vehicles/{id} → ADMIN
+        if (path.matches("vehicles/\\d+") && "DELETE".equals(method))
+            return isAdmin;
 
-        // ---- FACTURES ----
-        // Toutes les factures : ADMIN ou MANAGER
-        if (path.equals("invoices")) {
-            return "ADMIN".equals(role) || "MANAGER".equals(role);
-        }
-        // Factures d'un client : CLIENT, MANAGER, ADMIN
-        if (path.startsWith("invoices/client/")) {
-            return "CLIENT".equals(role) || "MANAGER".equals(role) || "ADMIN".equals(role);
-        }
-        // Payer une facture : CLIENT uniquement
-        if (path.equals("invoices/pay")) {
-            return "CLIENT".equals(role);
-        }
-        // Statistiques financières : ADMIN uniquement
-        if (path.equals("invoices/stats")) {
-            return "ADMIN".equals(role);
-        }
+        // GET /vehicles/maintenance → MANAGER | ADMIN
+        if ("vehicles/maintenance".equals(path) && "GET".equals(method))
+            return isManager || isAdmin;
 
-        // ---- RAPPORTS ADMIN ----
-        if (path.startsWith("reports/") || path.equals("reports")) {
-            return "ADMIN".equals(role);
-        }
+        // PUT /vehicles/{id}/maintenance → MANAGER | ADMIN
+        if (path.matches("vehicles/\\d+/maintenance") && "PUT".equals(method))
+            return isManager || isAdmin;
 
-        // Par défaut : accès refusé
+        // PUT /vehicles/{id}/service → MANAGER | ADMIN
+        if (path.matches("vehicles/\\d+/service") && "PUT".equals(method))
+            return isManager || isAdmin;
+
+        // PUT /vehicles/{id}/accidente → MANAGER | ADMIN
+        if (path.matches("vehicles/\\d+/accidente") && "PUT".equals(method))
+            return isManager || isAdmin;
+
+        // PUT /vehicles/{id}/reparer → MANAGER | ADMIN
+        if (path.matches("vehicles/\\d+/reparer") && "PUT".equals(method))
+            return isManager || isAdmin;
+
+        // PUT /vehicles/pricing/{cat} → ADMIN
+        if (path.startsWith("vehicles/pricing/") && "PUT".equals(method))
+            return isAdmin;
+
+        // ── RÉSERVATIONS ───────────────────────────────────────────────────────
+        // GET /reservations → MANAGER | ADMIN
+        if ("reservations".equals(path) && "GET".equals(method))
+            return isManager || isAdmin;
+
+        // POST /reservations → CLIENT
+        if ("reservations".equals(path) && "POST".equals(method))
+            return isClient;
+
+        // GET /reservations/{id} → CLIENT | MANAGER | ADMIN
+        if (path.matches("reservations/\\d+") && "GET".equals(method))
+            return isClient || isManager || isAdmin;
+
+        // PUT /reservations/{id}/confirm → MANAGER | ADMIN
+        if (path.matches("reservations/\\d+/confirm") && "PUT".equals(method))
+            return isManager || isAdmin;
+
+        // DELETE /reservations/{id} → CLIENT
+        if (path.matches("reservations/\\d+") && "DELETE".equals(method))
+            return isClient;
+
+        // GET /reservations/client/{id} → CLIENT | MANAGER | ADMIN
+        if (path.startsWith("reservations/client/") && "GET".equals(method))
+            return isClient || isManager || isAdmin;
+
+        // GET /reservations/agency/{name} → MANAGER | ADMIN
+        if (path.startsWith("reservations/agency/") && "GET".equals(method))
+            return isManager || isAdmin;
+
+        // ── CONTRATS ────────────────────────────────────────────────────────────
+        // POST /contracts → MANAGER
+        if ("contracts".equals(path) && "POST".equals(method))
+            return isManager;
+
+        // PUT /contracts/{id}/close → MANAGER
+        if (path.matches("contracts/\\d+/close") && "PUT".equals(method))
+            return isManager;
+
+        // GET /contracts/{id} → CLIENT | MANAGER | ADMIN
+        if (path.matches("contracts/\\d+") && "GET".equals(method))
+            return isClient || isManager || isAdmin;
+
+        // GET /contracts/client/{id} → CLIENT | MANAGER | ADMIN
+        if (path.startsWith("contracts/client/") && "GET".equals(method))
+            return isClient || isManager || isAdmin;
+
+        // GET /contracts/overdue → MANAGER | ADMIN
+        if ("contracts/overdue".equals(path) && "GET".equals(method))
+            return isManager || isAdmin;
+
+        // ── FACTURES ────────────────────────────────────────────────────────────
+        // GET /invoices → MANAGER | ADMIN
+        if ("invoices".equals(path) && "GET".equals(method))
+            return isManager || isAdmin;
+
+        // GET /invoices/{id} → CLIENT | MANAGER | ADMIN
+        if (path.matches("invoices/\\d+") && "GET".equals(method))
+            return isClient || isManager || isAdmin;
+
+        // GET /invoices/client/{id} → CLIENT | MANAGER | ADMIN
+        if (path.startsWith("invoices/client/") && "GET".equals(method))
+            return isClient || isManager || isAdmin;
+
+        // GET /invoices/stats → ADMIN
+        if ("invoices/stats".equals(path) && "GET".equals(method))
+            return isAdmin;
+
+        // PUT /invoices/{id}/pay → CLIENT
+        if (path.matches("invoices/\\d+/pay") && "PUT".equals(method))
+            return isClient;
+
+        // ── RAPPORTS ────────────────────────────────────────────────────────────
+        // Tous les rapports : ADMIN uniquement
+        if (path.startsWith("reports") && "GET".equals(method))
+            return isAdmin;
+
+        // ── CHANGEMENT MOT DE PASSE ──────────────────────────────────────────
+        // PUT /auth/change-password → CLIENT | MANAGER | ADMIN
+        if ("auth/change-password".equals(path) && "PUT".equals(method))
+            return isClient || isManager || isAdmin;
+
+        // Par défaut : refusé
         return false;
     }
 }

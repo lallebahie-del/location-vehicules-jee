@@ -12,51 +12,89 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ContractResource {
 
-    // 🔹 Créer un contrat à partir d'une réservation (via GET pour test)
+    // ===================== GET (lecture) =====================
+
+    /** GET /api/contracts/client/{clientId}?userId=2 → contrats d'un client */
     @GET
-    @Path("/create")
+    @Path("/client/{clientId}")
+    public Response getClientContracts(
+            @PathParam("clientId") Long clientId,
+            @QueryParam("userId") Long userId) {
+        List<RentalContract> contracts = ContractService.getClientActiveContracts(clientId);
+        return Response.ok(contracts).build();
+    }
+
+    /** GET /api/contracts/overdue?userId=4 → contrats en retard */
+    @GET
+    @Path("/overdue")
+    public Response getOverdueContracts(@QueryParam("userId") Long userId) {
+        List<RentalContract> contracts = ContractService.checkOverdueContracts();
+        return Response.ok(contracts).build();
+    }
+
+    /** GET /api/contracts/{id}?userId=4 → un contrat par ID */
+    @GET
+    @Path("/{id}")
+    public Response getContractById(
+            @PathParam("id") Long id,
+            @QueryParam("userId") Long userId) {
+        RentalContract contract = storage.ContractStorage.getContractById(id);
+        if (contract == null)
+            return Response.status(Response.Status.NOT_FOUND).entity("Contrat non trouvé").build();
+        return Response.ok(contract).build();
+    }
+
+    // ===================== POST (création) =====================
+
+    /**
+     * POST /api/contracts?userId=4
+     * Params: reservationId, managerId
+     * Crée un contrat au moment du départ du client
+     */
+    @POST
     public Response createContract(
+            @QueryParam("userId") Long userId,
             @QueryParam("reservationId") Long reservationId,
-            @QueryParam("managerId") Long managerId) {
+            @QueryParam("managerId") Long managerId,
+            @QueryParam("etatDepart") String etatDepart,
+            @QueryParam("kilometrageDepart") @DefaultValue("0") double kilometrageDepart,
+            @QueryParam("niveauCarburantDepart") @DefaultValue("1.0") double niveauCarburantDepart,
+            @QueryParam("documentsVerifies") @DefaultValue("true") boolean documentsVerifies) {
         try {
             RentalContract contract = ContractService.createContractFromReservation(reservationId, managerId);
+            // Enregistrement état départ
+            contract.setEtatDepart(etatDepart);
+            contract.setKilometrageDepart(kilometrageDepart);
+            contract.setNiveauCarburantDepart(niveauCarburantDepart);
+            contract.setDocumentsVerifies(documentsVerifies);
+            storage.ContractStorage.updateContract(contract);
             return Response.status(Response.Status.CREATED).entity(contract).build();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
 
-    // 🔹 Clôturer un contrat (via GET pour test)
-    @GET
-    @Path("/close")
+    // ===================== PUT (modification / clôture) =====================
+
+    /**
+     * PUT /api/contracts/{id}/close?userId=4
+     * Params: etat, carburant (0.0-1.0), dommages (true/false), kilometrageRetour
+     * Clôture le contrat au retour du véhicule
+     */
+    @PUT
+    @Path("/{id}/close")
     public Response closeContract(
-            @QueryParam("contractId") Long contractId,
-            @QueryParam("etat") String etat,
-            @QueryParam("carburant") double carburant,
-            @QueryParam("dommages") boolean dommages,
+            @PathParam("id") Long id,
+            @QueryParam("userId") Long userId,
+            @QueryParam("etat") @DefaultValue("BON_ETAT") String etat,
+            @QueryParam("carburant") @DefaultValue("1.0") double carburant,
+            @QueryParam("dommages") @DefaultValue("false") boolean dommages,
             @QueryParam("kilometrageRetour") @DefaultValue("0") double kilometrageRetour) {
         try {
-            RentalContract contract = ContractService.closeContract(
-                    contractId, etat, carburant, dommages, kilometrageRetour);
+            RentalContract contract = ContractService.closeContract(id, etat, carburant, dommages, kilometrageRetour);
             return Response.ok(contract).build();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
-    }
-
-    // 🔹 Voir les contrats actifs d'un client
-    @GET
-    @Path("/client/{clientId}")
-    public Response getClientActiveContracts(@PathParam("clientId") Long clientId) {
-        List<RentalContract> contracts = ContractService.getClientActiveContracts(clientId);
-        return Response.ok(contracts).build();
-    }
-
-    // 🔹 Vérifier les retards
-    @GET
-    @Path("/overdue")
-    public Response getOverdueContracts() {
-        List<RentalContract> contracts = ContractService.checkOverdueContracts();
-        return Response.ok(contracts).build();
     }
 }

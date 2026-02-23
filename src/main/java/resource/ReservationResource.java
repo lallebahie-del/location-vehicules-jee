@@ -15,72 +15,122 @@ import service.ReservationService;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ReservationResource {
 
-        // 🔹 Créer une réservation via GET
+        // ===================== GET (lecture) =====================
+
+        /** GET /api/reservations?userId=4 → toutes les réservations (MANAGER/ADMIN) */
         @GET
-        @Path("/add")
-        public Response createReservation(
-                        @QueryParam("clientId") Long clientId,
-                        @QueryParam("vehicleId") Long vehicleId,
-                        @QueryParam("dateDebut") String dateDebut,
-                        @QueryParam("dateFin") String dateFin,
-                        @QueryParam("avecChauffeur") boolean avecChauffeur) {
-
-                Reservation reservation = ReservationService.createReservation(
-                                clientId,
-                                vehicleId,
-                                LocalDate.parse(dateDebut),
-                                LocalDate.parse(dateFin),
-                                avecChauffeur);
-
-                return Response.status(Response.Status.CREATED)
-                                .entity(reservation)
-                                .build();
-        }
-
-        // 🔹 Lister toutes les réservations
-        @GET
-        public Response getAllReservations() {
+        public Response getAllReservations(@QueryParam("userId") Long userId) {
                 List<Reservation> reservations = ReservationService.getAllReservations();
                 return Response.ok(reservations).build();
         }
 
-        // 🔹 Confirmer une réservation (via GET pour test)
+        /** GET /api/reservations/{id}?userId=4 */
         @GET
-        @Path("/confirm")
-        public Response confirmReservation(@QueryParam("id") Long id) {
+        @Path("/{id}")
+        public Response getReservationById(
+                        @PathParam("id") Long id,
+                        @QueryParam("userId") Long userId) {
+                Reservation r = storage.ReservationStorage.getReservationById(id);
+                if (r == null)
+                        return Response.status(Response.Status.NOT_FOUND).entity("Réservation non trouvée").build();
+                return Response.ok(r).build();
+        }
+
+        /**
+         * GET /api/reservations/client/{clientId}?userId=2 → réservations d'un client
+         */
+        @GET
+        @Path("/client/{clientId}")
+        public Response getClientReservations(
+                        @PathParam("clientId") Long clientId,
+                        @QueryParam("userId") Long userId) {
+                return Response.ok(ReservationService.getClientReservations(clientId)).build();
+        }
+
+        /** GET /api/reservations/agency/{agence}?userId=4 → planning d'une agence */
+        @GET
+        @Path("/agency/{agence}")
+        public Response getReservationsByAgency(
+                        @PathParam("agence") String agence,
+                        @QueryParam("userId") Long userId) {
+                return Response.ok(storage.ReservationStorage.getReservationsByAgency(agence)).build();
+        }
+
+        // ===================== POST (création) =====================
+
+        /**
+         * POST /api/reservations?userId=2
+         * Params: clientId, vehicleId, dateDebut (YYYY-MM-DD), dateFin (YYYY-MM-DD),
+         * avecChauffeur, optionGPS, optionSiegeBebe, optionAssurance,
+         * agenceDepart, agenceRetour, categorieSouhaitee
+         */
+        @POST
+        public Response createReservation(
+                        @QueryParam("userId") Long userId,
+                        @QueryParam("clientId") Long clientId,
+                        @QueryParam("vehicleId") Long vehicleId,
+                        @QueryParam("dateDebut") String dateDebut,
+                        @QueryParam("dateFin") String dateFin,
+                        @QueryParam("avecChauffeur") @DefaultValue("false") boolean avecChauffeur,
+                        @QueryParam("optionGPS") @DefaultValue("false") boolean optionGPS,
+                        @QueryParam("optionSiegeBebe") @DefaultValue("false") boolean optionSiegeBebe,
+                        @QueryParam("optionAssurance") @DefaultValue("false") boolean optionAssurance,
+                        @QueryParam("agenceDepart") String agenceDepart,
+                        @QueryParam("agenceRetour") String agenceRetour,
+                        @QueryParam("categorieSouhaitee") String categorieSouhaitee) {
+                try {
+                        Reservation reservation = ReservationService.createReservation(
+                                        clientId, vehicleId,
+                                        LocalDate.parse(dateDebut),
+                                        LocalDate.parse(dateFin),
+                                        avecChauffeur);
+                        // Enrichir avec les options et agences
+                        reservation.setOptionGPS(optionGPS);
+                        reservation.setOptionSiegeBebe(optionSiegeBebe);
+                        reservation.setOptionAssurance(optionAssurance);
+                        reservation.setAgenceDepart(agenceDepart);
+                        reservation.setAgenceRetour(agenceRetour);
+                        reservation.setCategorieSouhaitee(categorieSouhaitee);
+                        storage.ReservationStorage.updateReservation(reservation);
+
+                        return Response.status(Response.Status.CREATED).entity(reservation).build();
+                } catch (Exception e) {
+                        return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+                }
+        }
+
+        // ===================== PUT (modification) =====================
+
+        /**
+         * PUT /api/reservations/{id}/confirm?userId=4 → confirmer une réservation
+         * (MANAGER)
+         */
+        @PUT
+        @Path("/{id}/confirm")
+        public Response confirmReservation(
+                        @PathParam("id") Long id,
+                        @QueryParam("userId") Long userId) {
                 boolean success = ReservationService.confirmReservation(id);
                 if (success)
                         return Response.ok("Réservation confirmée").build();
                 return Response.status(Response.Status.BAD_REQUEST).entity("Impossible de confirmer").build();
         }
 
-        // 🔹 Annuler une réservation (via GET pour test)
-        @GET
-        @Path("/cancel")
+        // ===================== DELETE (annulation) =====================
+
+        /**
+         * DELETE /api/reservations/{id}?userId=2&clientId=2 → annuler une réservation
+         * (CLIENT)
+         */
+        @DELETE
+        @Path("/{id}")
         public Response cancelReservation(
-                        @QueryParam("id") Long id,
+                        @PathParam("id") Long id,
+                        @QueryParam("userId") Long userId,
                         @QueryParam("clientId") Long clientId) {
                 boolean success = ReservationService.cancelReservation(id, clientId);
                 if (success)
                         return Response.ok("Réservation annulée").build();
                 return Response.status(Response.Status.BAD_REQUEST).entity("Impossible d'annuler").build();
-        }
-
-        // 🔹 Lister les réservations d'un client
-        @GET
-        @Path("/client/{clientId}")
-        public Response getClientReservations(@PathParam("clientId") Long clientId) {
-                List<Reservation> reservations = ReservationService.getClientReservations(clientId);
-                return Response.ok(reservations).build();
-        }
-
-        // 🔹 Planning des réservations d'une agence (gestionnaire)
-        @GET
-        @Path("/agency/{agence}")
-        public Response getReservationsByAgency(
-                        @PathParam("agence") String agence,
-                        @QueryParam("userId") Long userId) {
-                List<Reservation> reservations = storage.ReservationStorage.getReservationsByAgency(agence);
-                return Response.ok(reservations).build();
         }
 }
