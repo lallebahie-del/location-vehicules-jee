@@ -33,9 +33,11 @@ public class ContractResource {
             @QueryParam("contractId") Long contractId,
             @QueryParam("etat") String etat,
             @QueryParam("carburant") double carburant,
-            @QueryParam("dommages") boolean dommages) {
+            @QueryParam("dommages") boolean dommages,
+            @QueryParam("kilometrageRetour") @DefaultValue("0") double kilometrageRetour) {
         try {
-            RentalContract contract = ContractService.closeContract(contractId, etat, carburant, dommages);
+            RentalContract contract = ContractService.closeContract(
+                    contractId, etat, carburant, dommages, kilometrageRetour);
             return Response.ok(contract).build();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();

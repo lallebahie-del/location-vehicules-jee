@@ -13,22 +13,28 @@ public class RentalContract {
     private LocalDate dateFinPrevue;
     private LocalDate dateFinReelle;
     private double caution;
-    private String etatDepart; // État du véhicule au départ
-    private String etatRetour; // État du véhicule au retour
+    private String etatDepart; // Description état véhicule au départ
+    private String etatRetour; // Description état véhicule au retour
     private double penalites; // Total des pénalités
     private String statut; // ACTIF, CLOTURE, EN_RETARD
     private LocalDateTime dateCreation;
+    private double kilometrageDepart; // Kilométrage au départ
+    private double kilometrageRetour; // Kilométrage au retour
+    private double niveauCarburantDepart; // Niveau carburant au départ (%)
+    private double niveauCarburantRetour; // Niveau carburant au retour (%)
+    private boolean documentsVerifies; // Permis et pièce d'identité vérifiés
+    private String detailsPenalites; // Détails des pénalités
 
     // Constructors
     public RentalContract() {
         this.dateCreation = LocalDateTime.now();
         this.statut = "ACTIF";
-        this.caution = 500.0; // Caution par défaut
+        this.caution = 500.0;
     }
 
-    public RentalContract(Long id, Long reservationId, Long clientId, 
-                          Long vehicleId, Long managerId, 
-                          LocalDate dateDebut, LocalDate dateFinPrevue) {
+    public RentalContract(Long id, Long reservationId, Long clientId,
+            Long vehicleId, Long managerId,
+            LocalDate dateDebut, LocalDate dateFinPrevue) {
         this.id = id;
         this.reservationId = reservationId;
         this.clientId = clientId;
@@ -152,5 +158,53 @@ public class RentalContract {
 
     public void setDateCreation(LocalDateTime dateCreation) {
         this.dateCreation = dateCreation;
+    }
+
+    public double getKilometrageDepart() {
+        return kilometrageDepart;
+    }
+
+    public void setKilometrageDepart(double kilometrageDepart) {
+        this.kilometrageDepart = kilometrageDepart;
+    }
+
+    public double getKilometrageRetour() {
+        return kilometrageRetour;
+    }
+
+    public void setKilometrageRetour(double kilometrageRetour) {
+        this.kilometrageRetour = kilometrageRetour;
+    }
+
+    public double getNiveauCarburantDepart() {
+        return niveauCarburantDepart;
+    }
+
+    public void setNiveauCarburantDepart(double niveauCarburantDepart) {
+        this.niveauCarburantDepart = niveauCarburantDepart;
+    }
+
+    public double getNiveauCarburantRetour() {
+        return niveauCarburantRetour;
+    }
+
+    public void setNiveauCarburantRetour(double niveauCarburantRetour) {
+        this.niveauCarburantRetour = niveauCarburantRetour;
+    }
+
+    public boolean isDocumentsVerifies() {
+        return documentsVerifies;
+    }
+
+    public void setDocumentsVerifies(boolean documentsVerifies) {
+        this.documentsVerifies = documentsVerifies;
+    }
+
+    public String getDetailsPenalites() {
+        return detailsPenalites;
+    }
+
+    public void setDetailsPenalites(String detailsPenalites) {
+        this.detailsPenalites = detailsPenalites;
     }
 }

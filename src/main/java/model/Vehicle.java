@@ -4,20 +4,25 @@ public class Vehicle {
     private Long id;
     private String marque;
     private String modele;
+    private int anneeFabrication; // Année de fabrication
     private String immatriculation;
-    private String categorie; // ECONOMIQUE, CONFORT, SUV, LUXE
+    private String categorie; // ECONOMIQUE, COMPACT, SUV, LUXE, UTILITAIRE
+    private int nombrePlaces;
+    private String typeCarburant; // ESSENCE, DIESEL, ELECTRIQUE, HYBRIDE
+    private double kilometrage; // Kilométrage actuel
     private double tarifJournalier;
     private String statut; // DISPONIBLE, EN_LOCATION, EN_MAINTENANCE
     private String agence; // Agence de rattachement
-    private int nombrePlaces;
+    private double limiteKilometrage; // Limite km par location (0 = illimité)
 
     // Constructors
     public Vehicle() {
         this.statut = "DISPONIBLE";
+        this.limiteKilometrage = 0;
     }
 
-    public Vehicle(Long id, String marque, String modele, String immatriculation, 
-                   String categorie, double tarifJournalier, String agence, int nombrePlaces) {
+    public Vehicle(Long id, String marque, String modele, String immatriculation,
+            String categorie, double tarifJournalier, String agence, int nombrePlaces) {
         this.id = id;
         this.marque = marque;
         this.modele = modele;
@@ -27,6 +32,26 @@ public class Vehicle {
         this.statut = "DISPONIBLE";
         this.agence = agence;
         this.nombrePlaces = nombrePlaces;
+        this.limiteKilometrage = 0;
+    }
+
+    public Vehicle(Long id, String marque, String modele, int anneeFabrication,
+            String immatriculation, String categorie, int nombrePlaces,
+            String typeCarburant, double kilometrage, double tarifJournalier,
+            String agence) {
+        this.id = id;
+        this.marque = marque;
+        this.modele = modele;
+        this.anneeFabrication = anneeFabrication;
+        this.immatriculation = immatriculation;
+        this.categorie = categorie;
+        this.nombrePlaces = nombrePlaces;
+        this.typeCarburant = typeCarburant;
+        this.kilometrage = kilometrage;
+        this.tarifJournalier = tarifJournalier;
+        this.statut = "DISPONIBLE";
+        this.agence = agence;
+        this.limiteKilometrage = 0;
     }
 
     // Getters & Setters
@@ -54,6 +79,14 @@ public class Vehicle {
         this.modele = modele;
     }
 
+    public int getAnneeFabrication() {
+        return anneeFabrication;
+    }
+
+    public void setAnneeFabrication(int anneeFabrication) {
+        this.anneeFabrication = anneeFabrication;
+    }
+
     public String getImmatriculation() {
         return immatriculation;
     }
@@ -68,6 +101,30 @@ public class Vehicle {
 
     public void setCategorie(String categorie) {
         this.categorie = categorie;
+    }
+
+    public int getNombrePlaces() {
+        return nombrePlaces;
+    }
+
+    public void setNombrePlaces(int nombrePlaces) {
+        this.nombrePlaces = nombrePlaces;
+    }
+
+    public String getTypeCarburant() {
+        return typeCarburant;
+    }
+
+    public void setTypeCarburant(String typeCarburant) {
+        this.typeCarburant = typeCarburant;
+    }
+
+    public double getKilometrage() {
+        return kilometrage;
+    }
+
+    public void setKilometrage(double kilometrage) {
+        this.kilometrage = kilometrage;
     }
 
     public double getTarifJournalier() {
@@ -94,11 +151,11 @@ public class Vehicle {
         this.agence = agence;
     }
 
-    public int getNombrePlaces() {
-        return nombrePlaces;
+    public double getLimiteKilometrage() {
+        return limiteKilometrage;
     }
 
-    public void setNombrePlaces(int nombrePlaces) {
-        this.nombrePlaces = nombrePlaces;
+    public void setLimiteKilometrage(double limiteKilometrage) {
+        this.limiteKilometrage = limiteKilometrage;
     }
 }

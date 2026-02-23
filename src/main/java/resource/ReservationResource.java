@@ -73,4 +73,14 @@ public class ReservationResource {
                 List<Reservation> reservations = ReservationService.getClientReservations(clientId);
                 return Response.ok(reservations).build();
         }
+
+        // 🔹 Planning des réservations d'une agence (gestionnaire)
+        @GET
+        @Path("/agency/{agence}")
+        public Response getReservationsByAgency(
+                        @PathParam("agence") String agence,
+                        @QueryParam("userId") Long userId) {
+                List<Reservation> reservations = storage.ReservationStorage.getReservationsByAgency(agence);
+                return Response.ok(reservations).build();
+        }
 }

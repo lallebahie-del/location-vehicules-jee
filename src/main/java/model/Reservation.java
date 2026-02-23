@@ -14,6 +14,12 @@ public class Reservation {
     private String statut; // EN_ATTENTE, CONFIRMEE, ANNULEE, TERMINEE
     private LocalDate dateReservation;
     private boolean avecChauffeur;
+    private String agenceDepart; // Agence de départ
+    private String agenceRetour; // Agence de retour (si différente)
+    private boolean optionGPS; // Option GPS
+    private boolean optionSiegeBebe; // Option siège bébé
+    private boolean optionAssurance; // Option assurance tous risques
+    private String categorieSouhaitee; // Catégorie souhaitée par le client
 
     // Constructors
     public Reservation() {
@@ -82,6 +88,54 @@ public class Reservation {
 
     public void setAvecChauffeur(boolean avecChauffeur) {
         this.avecChauffeur = avecChauffeur;
+    }
+
+    public String getAgenceDepart() {
+        return agenceDepart;
+    }
+
+    public void setAgenceDepart(String agenceDepart) {
+        this.agenceDepart = agenceDepart;
+    }
+
+    public String getAgenceRetour() {
+        return agenceRetour;
+    }
+
+    public void setAgenceRetour(String agenceRetour) {
+        this.agenceRetour = agenceRetour;
+    }
+
+    public boolean isOptionGPS() {
+        return optionGPS;
+    }
+
+    public void setOptionGPS(boolean optionGPS) {
+        this.optionGPS = optionGPS;
+    }
+
+    public boolean isOptionSiegeBebe() {
+        return optionSiegeBebe;
+    }
+
+    public void setOptionSiegeBebe(boolean optionSiegeBebe) {
+        this.optionSiegeBebe = optionSiegeBebe;
+    }
+
+    public boolean isOptionAssurance() {
+        return optionAssurance;
+    }
+
+    public void setOptionAssurance(boolean optionAssurance) {
+        this.optionAssurance = optionAssurance;
+    }
+
+    public String getCategorieSouhaitee() {
+        return categorieSouhaitee;
+    }
+
+    public void setCategorieSouhaitee(String categorieSouhaitee) {
+        this.categorieSouhaitee = categorieSouhaitee;
     }
 
     // -- LocalDate Setters --
