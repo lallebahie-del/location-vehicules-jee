@@ -9,14 +9,29 @@ import java.util.List;
 
 @Path("/contracts")
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class ContractResource {
 
     // ===================== GET (lecture) =====================
 
+    /** GET /api/contracts?userId=1 → tous les contrats (ADMIN/MANAGER) */
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    public Response getAllContracts(@QueryParam("userId") Long userId) {
+        return Response.ok(storage.ContractStorage.getAllContracts().values()).build();
+    }
+
+    /** GET /api/contracts/active?userId=4 → contrats actifs seulement */
+    @GET
+    @Path("/active")
+    @Consumes(MediaType.WILDCARD)
+    public Response getActiveContracts(@QueryParam("userId") Long userId) {
+        return Response.ok(storage.ContractStorage.getActiveContracts()).build();
+    }
+
     /** GET /api/contracts/client/{clientId}?userId=2 → contrats d'un client */
     @GET
     @Path("/client/{clientId}")
+    @Consumes(MediaType.WILDCARD)
     public Response getClientContracts(
             @PathParam("clientId") Long clientId,
             @QueryParam("userId") Long userId) {
@@ -27,6 +42,7 @@ public class ContractResource {
     /** GET /api/contracts/overdue?userId=4 → contrats en retard */
     @GET
     @Path("/overdue")
+    @Consumes(MediaType.WILDCARD)
     public Response getOverdueContracts(@QueryParam("userId") Long userId) {
         List<RentalContract> contracts = ContractService.checkOverdueContracts();
         return Response.ok(contracts).build();
@@ -35,6 +51,7 @@ public class ContractResource {
     /** GET /api/contracts/{id}?userId=4 → un contrat par ID */
     @GET
     @Path("/{id}")
+    @Consumes(MediaType.WILDCARD)
     public Response getContractById(
             @PathParam("id") Long id,
             @QueryParam("userId") Long userId) {
@@ -52,6 +69,7 @@ public class ContractResource {
      * Crée un contrat au moment du départ du client
      */
     @POST
+    @Consumes(MediaType.APPLICATION_JSON + "," + MediaType.APPLICATION_FORM_URLENCODED + "," + MediaType.WILDCARD)
     public Response createContract(
             @QueryParam("userId") Long userId,
             @QueryParam("reservationId") Long reservationId,
@@ -83,6 +101,7 @@ public class ContractResource {
      */
     @PUT
     @Path("/{id}/close")
+    @Consumes(MediaType.WILDCARD)
     public Response closeContract(
             @PathParam("id") Long id,
             @QueryParam("userId") Long userId,
