@@ -1,6 +1,8 @@
 package model;
 
 import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Invoice {
     private Long id;
@@ -21,8 +23,8 @@ public class Invoice {
         this.statutPaiement = "EN_ATTENTE";
     }
 
-    public Invoice(Long id, Long contractId, Long clientId, 
-                   double montantLocation, double montantPenalites) {
+    public Invoice(Long id, Long contractId, Long clientId,
+            double montantLocation, double montantPenalites) {
         this.id = id;
         this.contractId = contractId;
         this.clientId = clientId;
@@ -58,6 +60,7 @@ public class Invoice {
         this.clientId = clientId;
     }
 
+    @JsonIgnore
     public LocalDate getDateEmission() {
         return dateEmission;
     }
@@ -66,12 +69,23 @@ public class Invoice {
         this.dateEmission = dateEmission;
     }
 
+    @JsonProperty("dateEmission")
+    public String getDateEmissionAsString() {
+        return dateEmission != null ? dateEmission.toString() : null;
+    }
+
+    @JsonIgnore
     public LocalDate getDatePaiement() {
         return datePaiement;
     }
 
     public void setDatePaiement(LocalDate datePaiement) {
         this.datePaiement = datePaiement;
+    }
+
+    @JsonProperty("datePaiement")
+    public String getDatePaiementAsString() {
+        return datePaiement != null ? datePaiement.toString() : null;
     }
 
     public double getMontantLocation() {

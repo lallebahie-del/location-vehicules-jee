@@ -1,6 +1,8 @@
 package model;
 
 import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Client extends User {
     private String nom;
@@ -62,6 +64,7 @@ public class Client extends User {
         this.prenom = prenom;
     }
 
+    @JsonIgnore
     public LocalDate getDateNaissance() {
         return dateNaissance;
     }
@@ -70,12 +73,23 @@ public class Client extends User {
         this.dateNaissance = dateNaissance;
     }
 
+    @JsonProperty("dateNaissance")
+    public String getDateNaissanceAsString() {
+        return dateNaissance != null ? dateNaissance.toString() : null;
+    }
+
+    @JsonIgnore
     public LocalDate getDateObtentionPermis() {
         return dateObtentionPermis;
     }
 
     public void setDateObtentionPermis(LocalDate dateObtentionPermis) {
         this.dateObtentionPermis = dateObtentionPermis;
+    }
+
+    @JsonProperty("dateObtentionPermis")
+    public String getDateObtentionPermisAsString() {
+        return dateObtentionPermis != null ? dateObtentionPermis.toString() : null;
     }
 
     public boolean isPermisValide() {
