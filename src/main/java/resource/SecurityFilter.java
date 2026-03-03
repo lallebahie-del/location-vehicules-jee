@@ -171,13 +171,21 @@ public class SecurityFilter implements ContainerRequestFilter {
             return isManager || isAdmin;
 
         // ── CONTRATS ────────────────────────────────────────────────────────────
-        // POST /contracts → MANAGER
-        if ("contracts".equals(path) && "POST".equals(method))
-            return isManager;
+        // GET /contracts → MANAGER | ADMIN
+        if ("contracts".equals(path) && "GET".equals(method))
+            return isManager || isAdmin;
 
-        // PUT /contracts/{id}/close → MANAGER
+        // GET /contracts/active → MANAGER | ADMIN
+        if ("contracts/active".equals(path) && "GET".equals(method))
+            return isManager || isAdmin;
+
+        // POST /contracts → MANAGER | ADMIN
+        if ("contracts".equals(path) && "POST".equals(method))
+            return isManager || isAdmin;
+
+        // PUT /contracts/{id}/close → MANAGER | ADMIN
         if (path.matches("contracts/\\d+/close") && "PUT".equals(method))
-            return isManager;
+            return isManager || isAdmin;
 
         // GET /contracts/{id} → CLIENT | MANAGER | ADMIN
         if (path.matches("contracts/\\d+") && "GET".equals(method))
