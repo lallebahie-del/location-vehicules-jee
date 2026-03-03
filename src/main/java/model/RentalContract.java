@@ -2,6 +2,8 @@ package model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class RentalContract {
     private Long id;
@@ -88,6 +90,7 @@ public class RentalContract {
         this.managerId = managerId;
     }
 
+    @JsonIgnore
     public LocalDate getDateDebut() {
         return dateDebut;
     }
@@ -96,6 +99,12 @@ public class RentalContract {
         this.dateDebut = dateDebut;
     }
 
+    @JsonProperty("dateDebut")
+    public String getDateDebutAsString() {
+        return dateDebut != null ? dateDebut.toString() : null;
+    }
+
+    @JsonIgnore
     public LocalDate getDateFinPrevue() {
         return dateFinPrevue;
     }
@@ -104,12 +113,23 @@ public class RentalContract {
         this.dateFinPrevue = dateFinPrevue;
     }
 
+    @JsonProperty("dateFinPrevue")
+    public String getDateFinPrevueAsString() {
+        return dateFinPrevue != null ? dateFinPrevue.toString() : null;
+    }
+
+    @JsonIgnore
     public LocalDate getDateFinReelle() {
         return dateFinReelle;
     }
 
     public void setDateFinReelle(LocalDate dateFinReelle) {
         this.dateFinReelle = dateFinReelle;
+    }
+
+    @JsonProperty("dateFinReelle")
+    public String getDateFinReelleAsString() {
+        return dateFinReelle != null ? dateFinReelle.toString() : null;
     }
 
     public double getCaution() {
@@ -152,12 +172,18 @@ public class RentalContract {
         this.statut = statut;
     }
 
+    @JsonIgnore
     public LocalDateTime getDateCreation() {
         return dateCreation;
     }
 
     public void setDateCreation(LocalDateTime dateCreation) {
         this.dateCreation = dateCreation;
+    }
+
+    @JsonProperty("dateCreation")
+    public String getDateCreationAsString() {
+        return dateCreation != null ? dateCreation.toString() : null;
     }
 
     public double getKilometrageDepart() {
